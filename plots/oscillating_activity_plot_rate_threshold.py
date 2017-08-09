@@ -1,0 +1,83 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import cPickle as pickle
+
+from custom_modules.plot_setting import *
+#mpl.rcParams['lines.linewidth'] = .8
+
+# This script plots the unintended oscillations of exc. firing rates and exc. thresholds that we found.
+
+## Simulation scripts required to run before this script:
+# -all_diffusive_fast_hom_adaptation
+
+from custom_modules.frequ_from_spikes import *
+
+
+# where to find sim data and where to save figure
+folder = sim_data_base_folder + "complete_diff_long_small_tau/"
+savefolder = plots_base_folder + "diff_hom/"
+plot_filename = "rate_th_close"
+
+#load spiketimes
+spt_e = pickle.load(open(folder+"spiketimes_e.p","rb"))
+
+# unify spiketimes for calculation of population rates
+spt_pop_e = []
+
+for k in xrange(len(spt_e)):
+	
+	spt_pop_e.extend(spt_e[k])
+
+# calculate population rates for a bin width of 0.1s
+r_pop_e = frequ_bin_time([spt_pop_e],0,1500,15000)/len(spt_e)
+
+# load thresholds and calculate population mean
+th = np.array(pickle.load(open(folder+"thresholds_e.p","rb"))).T
+
+th_mean = np.abs(th.mean(axis=1))*1000.
+
+
+fig, ax = plt.subplots(1,1,figsize=(default_fig_width*0.7,default_fig_width*0.5),dpi=102)
+
+# the plot range was hand tuned to plot a section that gives a "representative" visual impression of the dynamics
+plot_range = [765,775]
+
+# calculate plot ranges and plot the data
+
+e_max = r_pop_e[plot_range[0]*10:plot_range[1]*10].max()
+e_min = r_pop_e[plot_range[0]*10:plot_range[1]*10].min()
+
+e_plt_max = e_max + 0.1*(e_max-e_min)
+e_plt_min = e_min - 0.1*(e_max-e_min)
+
+
+th_mean_max = th_mean[plot_range[0]*10:plot_range[1]*10].max()
+th_mean_min = th_mean[plot_range[0]*10:plot_range[1]*10].min()
+
+th_mean_plt_max = th_mean_max + 0.1*(th_mean_max-th_mean_min)
+th_mean_plt_min = th_mean_min - 0.1*(th_mean_max-th_mean_min)
+
+
+ax.plot(np.linspace(0,1500,15000),r_pop_e)
+#ax[3].plot(np.linspace(0,1500,15000),r_pop_i)
+ax.set_ylabel(r"$\langle$ f [Hz] $\rangle$")
+for tl in ax.get_yticklabels():
+    tl.set_color(mpl.rcParams['axes.color_cycle'][0])
+ax.set_xlim([plot_range[0],plot_range[1]])
+ax.set_ylim([e_plt_min,e_plt_max])
+ax.locator_params(axis='y',nbins=5)
+ax.set_xlabel("t [s]")
+
+ax_th_mean = ax.twinx()
+ax_th_mean.set_ylabel(r"$| \langle$ $V_t$ [mV] $\rangle |$")
+ax_th_mean.plot(np.linspace(0,1500,15000),th_mean,c=mpl.rcParams['axes.color_cycle'][1])
+for tl in ax_th_mean.get_yticklabels():
+    tl.set_color(mpl.rcParams['axes.color_cycle'][1])
+ax_th_mean.set_xlim([plot_range[0],plot_range[1]])
+ax_th_mean.set_ylim([th_mean_plt_min,th_mean_plt_max])
+
+# save figure
+for f_f in file_format:
+	plt.savefig(savefolder + plot_filename + f_f)
+
+plt.show()

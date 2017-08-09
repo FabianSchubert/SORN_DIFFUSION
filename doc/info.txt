@@ -1,0 +1,25 @@
+Before running the plotting scripts,
+run setup_env_install_modules.py to install
+the "custom_modules" package, tqdm and the powerlaw package.
+
+You will be asked to specify a folder for storing the simulation data
+and for storing the generated figures. Please make sure to include a
+"/" at the end of the chosen path.
+
+Furthermore, the following packages are used:
+brian 
+numpy/scipy
+matplotlib
+
+
+Each figure in the latex code has a reference to the plotting script that generates the graphics of the figure.
+Each plotting script contains a list of code that needs to be run before running the plotting script.
+
+When running a simulation script, you can either directly run the python script starting with "SORN_...", or run the "run_sims.py" script in the same folder. In some cases, this will then subsequently execute multiple simulation runs, e.g. if the simulation is meant to be run with different values of a parameter.
+
+If needed, change key parameters of the simulation by altering the parameters.py file in the same folder.
+
+A description of the different simulation protocols is given in info_simulation_code.txt
+
+
+

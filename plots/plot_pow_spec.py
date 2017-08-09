@@ -1,0 +1,61 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import cPickle as pickle
+#from frequ_from_spikes import *
+from custom_modules.plot_setting import *
+
+mpl.rcParams['lines.linewidth'] = 1.
+
+# This script plots the power spectrum of the population mean of excitatory thresholds and the population mean of the power spectra of excitatory thresholds.
+
+## Simulation scripts required to run before this script:
+# -all_diffusive_fast_hom_adaptation
+
+#locations of simulation data and plots
+filename = sim_data_base_folder + "complete_diff_long_small_tau/thresholds_e.p"
+savefolder = plots_base_folder + "power_spec/"
+plot_filename = "power_spectrum_sim_only"
+
+# time resolution of thresold recording
+dt = 0.1
+
+# load thresholds
+th = (np.array(pickle.load(open(filename))).T)[7500:,:]*1000.
+# calculate population mean
+th_mean = th.mean(axis=1)
+
+# calculate fourier transforms
+fft_th = np.fft.fft(th,axis=0)
+fft_th_mean = np.fft.fft(th_mean)
+
+# discard offset
+fft_th[0,:] = 0.
+fft_th_mean[0] = 0.
+
+# calculate power spectra
+pow_th = (np.abs(fft_th)**2).mean(axis=1)*dt/fft_th.shape[0]
+pow_th_mean = np.abs(fft_th_mean)**2*dt/fft_th_mean.shape[0]
+
+# frequency axis
+f_ax = np.linspace(0,10.,7500)
+
+plt.figure(figsize=(default_fig_width*0.7,default_fig_width*0.7*0.8))
+
+# plot spectra
+plt.plot(f_ax,pow_th,label=r"Mean of Power Spectrum of $\mathrm{V_t}$")
+plt.plot(f_ax,pow_th_mean,label=r"Power Spectrum of $\mathrm{<V_t>}$")
+
+plt.xlim([0.,1.5])
+
+plt.xlabel(r"$\mathrm{f\,[Hz]}$")
+plt.ylabel(r"$\mathrm{P(f)\,[mV^2]}$")
+
+plt.legend()
+
+# save figure
+for f_f in file_format:
+		plt.savefig(savefolder+plot_filename+f_f)
+
+
+plt.show()
+

@@ -1,0 +1,3 @@
+import os
+
+exec("SORN_complete_diff_long.py")

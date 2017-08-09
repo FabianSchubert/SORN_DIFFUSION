@@ -1,0 +1,258 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pickle
+import sys
+from custom_modules.plot_setting import *
+import matplotlib as mpl
+from matplotlib import gridspec
+
+from scipy.optimize import curve_fit as curve_fit
+
+mpl.rcParams['lines.linewidth'] = 1.
+mpl.rcParams['font.size'] = 6.5
+
+#This script plots the distribution of interspike intervals and of the coefficient of variation, of both excitatory and inhibitory neurons
+
+## Simulation scripts required to run before this script:
+# -all_diffusive_slow_hom_adaptation
+# -all_non_diffusive
+
+
+# Files with spike data
+
+diff_file_e = sim_data_base_folder +  "complete_diff_long/spiketimes_e.p"
+non_diff_file_e = sim_data_base_folder + "complete_non_diff_long/spiketimes_e.p"
+
+diff_file_i = sim_data_base_folder +  "complete_diff_long/spiketimes_i.p"
+non_diff_file_i = sim_data_base_folder + "complete_non_diff_long/spiketimes_i.p"
+
+# where to save the figure
+savefolder = plots_base_folder + "Spike_Stats/"
+plot_filename = "isi_cv_compare"
+
+# time span for analysis
+t_span = [500.,1500.]
+# number of bins for ISI statistics
+n_bins_isi = 100
+# number of bins for coefficient of variation
+n_bins_cv = 30
+# set y axis to logarithmic
+plot_type = "log"
+
+# Exponential function for curve fitting
+def fit_exp(x,A,tau):
+	
+	return A*np.exp(-x/tau)
+
+# function for plotting ISI statistics
+def plot_isi(file_name,t_span,frequ_span,isi_span,n_bins,do_fit,lab,col_ind,ax,**kwargs):
+	
+	#time window width
+	delta_t = t_span[1]-t_span[0]
+	
+	# load spiketimes
+	spiketimes=pickle.load(open(file_name,"rb"))
+	
+	# number of neurons
+	N = len(spiketimes)
+	
+	# initialize list of ISIs
+	ISI_tot=[]
+	
+	# Since exc. firing rates do vary significantly in the case of diffusive homeostasis (and in any case for the inhibitory population),
+	# one needs to pick a subset of neurons with approximately similar firing rates. Since the mean firing rate was 3 Hz, the acceptance window
+	# was set to be around this rate to include sufficiently many neurons into the statistics
+	n_accept=0
+	for n in xrange(N):
+		
+		# spiketimes for nth neuron
+		times=np.array(spiketimes[n])
+	
+		#calculate mean firing rate
+		frequ=((times>=t_span[0]) * (times <= t_span[1])*1.).sum()/(delta_t)
+		
+		# discard neurons outside the given firing rate window	
+		if frequ >= frequ_span[0] and frequ <= frequ_span[1]:	
+			n_accept += 1
+			
+			# determine spikes falling into the given time window
+			
+			k=0
+			kmax = len(times)-1
+			while times[k] < t_span[0] and k < (kmax-1):
+				k+=1
+	
+			l=0
+			lmax = len(times)-1
+			while times[l] < t_span[1] and l < (lmax-1):
+				l+=1
+			
+			# append ISIs to the list
+			ISI_tot=np.append(ISI_tot,times[k+1:l]-times[k:l-1])
+	
+	# info on the number of neurons used for binning
+	print("Number of neurons contributing to histogram: " + str(n_accept))
+	
+	# calculate ISI histogram
+	numbers = np.histogram(ISI_tot,bins=np.linspace(isi_span[0],isi_span[1],n_bins + 1))
+	
+	# bin width
+	dx = (isi_span[1]-isi_span[0])/n_bins
+	
+	# plot ISI histogram
+	ax.step(numbers[1][:-1],numbers[0]*1./(len(ISI_tot)*dx),where="mid",label=lab,c=mpl.rcParams['axes.color_cycle'][col_ind])
+	
+	# in case a fit is demanded...
+	if do_fit:
+		# only fit a certain region of ISIs...
+		if 'fit_span' in kwargs:
+			fit_span = kwargs['fit_span']
+			fit_span_ind = [int((fit_span[0]-isi_span[0])/dx),int((fit_span[1]-isi_span[0])/dx)]
+			
+			fit = curve_fit(fit_exp,numbers[1][fit_span_ind[0]:fit_span_ind[1]],numbers[0][fit_span_ind[0]:fit_span_ind[1]]*1./(len(ISI_tot)*dx))
+			ax.plot(numbers[1][:-1],fit_exp(numbers[1][:-1],fit[0][0],fit[0][1]),'--',lw=1,c='k')
+		# or the entire histogram.
+		else:
+			fit = curve_fit(fit_exp,numbers[1][:-1],numbers[0][:]*1./(len(ISI_tot)*dx))
+			ax.plot(numbers[1][:-1],fit_exp(numbers[1][:-1],fit[0][0],fit[0][1]),'--',lw=1,c='k')
+
+# function for plotting CV
+def plot_cv(file_name,t_span,cv_span,n_bins,lab,col_ind,ax):
+	
+	#time window width
+	delta_t = t_span[1]-t_span[0]
+	
+	#load spiketimes
+	spiketimes=pickle.load(open(file_name,"rb"))
+	
+	#number of neurons
+	N=len(spiketimes)
+	
+	#initialize CV list
+	CV=[]
+
+	# see plot_isi
+	for n in xrange(N):
+
+		times=np.array(spiketimes[n])
+		
+		
+		k=0
+		kmax = len(times)-1
+		while times[k] < t_span[0] and k < (kmax-1):
+			k+=1
+	
+		l=0
+		lmax = len(times)-1
+		while times[l] < t_span[1] and l < (lmax-1):
+			l+=1
+		
+	
+		isi = times[k+1:l]-times[k:l-1]
+	
+		# CV := std_dev / mean
+		CV.append(isi.std()/isi.mean())
+	
+	# bin width
+	dx = (cv_span[1]-cv_span[0])/n_bins	
+	
+	# calculate histogram
+	numbers = np.histogram(CV,bins=np.linspace(cv_span[0],cv_span[1],n_bins + 1))
+	
+	# plot histogram
+	ax.step(numbers[1][:-1],numbers[0]*1./(len(CV)*dx),c=mpl.rcParams['axes.color_cycle'][col_ind],label=lab)
+
+
+
+
+fig = plt.figure(figsize=(default_fig_width,default_fig_width))
+gs = gridspec.GridSpec(3,2)
+ax = [[None,None],[None,None]]
+ax[0][0] = fig.add_subplot(gs[:-1,0])
+ax[1][0] = fig.add_subplot(gs[-1,0])
+ax[0][1] = fig.add_subplot(gs[:-1,1])
+ax[1][1] = fig.add_subplot(gs[-1,1])
+
+import pdb
+
+########## excitatory
+isi_span_e = [0.,2.]
+cv_span_e = [0.6,1.4]
+
+plot_isi(non_diff_file_e,t_span,[2.5,3.5],isi_span_e,n_bins_isi,False,r"Non-Diff., exc., 2.5 - 3.5 Hz",0,ax[0][0],fit_span=[0.1,2.])
+
+
+
+plot_isi(diff_file_e,t_span,[0.5,1.5],isi_span_e,n_bins_isi,False,r"Diff., exc., 0.5 - 1.5 Hz",1,ax[0][0])
+
+plot_isi(diff_file_e,t_span,[2.5,3.5],isi_span_e,n_bins_isi,False,r"Diff., exc., 2.5 - 3.5 Hz",2,ax[0][0],fit_span=[0.1,2.])
+
+plot_isi(diff_file_e,t_span,[4.5,5.5],isi_span_e,n_bins_isi,False,r"Diff., exc., 4.5 - 5.5 Hz",3,ax[0][0])
+
+plot_cv(non_diff_file_e,t_span,cv_span_e,n_bins_cv,r"Non-Diff., exc.",0,ax[1][0])
+plot_cv(diff_file_e,t_span,cv_span_e,n_bins_cv,r"Diff., exc.",1,ax[1][0])
+###########
+
+########### inhibitory
+isi_span_i = [0.,0.5]
+cv_span_i = [1.0,2.5]
+
+pdb.set_trace()
+
+plot_isi(non_diff_file_i,t_span,[7.5,8.5],isi_span_i,n_bins_isi,False,r"Non-Diff., inh., 7.5 - 8.5 Hz",0,ax[0][1],fit_span=[0.1,.5])
+
+plot_isi(diff_file_i,t_span,[3.5,4.5],isi_span_i,n_bins_isi,False,r"Diff., inh., 3.5 - 4.5 Hz",1,ax[0][1])
+plot_isi(diff_file_i,t_span,[7.5,8.5],isi_span_i,n_bins_isi,False,r"Diff., inh., 7.5 - 8.5 Hz",2,ax[0][1],fit_span=[0.1,.5])
+plot_isi(diff_file_i,t_span,[11.5,12.5],isi_span_i,n_bins_isi,False,r"Diff., inh., 11.5 - 12.5 Hz",3,ax[0][1])
+
+plot_cv(non_diff_file_i,t_span,cv_span_i,n_bins_cv,r"Non-Diff., inh.",0,ax[1][1])
+plot_cv(diff_file_i,t_span,cv_span_i,n_bins_cv,r"Diff., inh.",1,ax[1][1])
+
+ax[1][1].set_ylim([0.,5.])
+###########
+
+
+ax[0][0].legend(loc=3) #lower left
+ax[1][0].legend()
+ax[0][1].legend(loc=1) #upper right
+ax[1][1].legend()
+
+
+if plot_type == "log":
+	ax[0][0].set_yscale("log")
+	ax[0][1].set_yscale("log")
+elif plot_type == "loglog":
+	ax[0][0].set_yscale("log")
+	ax[0][0].set_xscale("log")
+	ax[0][1].set_yscale("log")
+	ax[0][1].set_xscale("log")
+elif plot_type == "regular":
+	pass
+else:
+	print("Wrong plot type argument!")	
+
+ax[0][0].set_xlabel("ISI [s]")
+ax[0][0].set_ylabel("Probability Dens.")
+
+ax[1][0].set_xlabel("CV")
+ax[1][0].set_ylabel("Probability Dens.")
+
+ax[0][1].set_xlabel("ISI [s]")
+ax[1][1].set_xlabel("CV")
+
+ax[0][0].set_title("A",loc="left")
+ax[1][0].set_title("B",loc="left")
+ax[0][1].set_title("C",loc="left")
+ax[1][1].set_title("D",loc="left")
+
+
+for f_f in file_format:
+	plt.savefig(savefolder+plot_filename+f_f)
+
+
+
+plt.show()
+
+
+#import pdb
+#pdb.set_trace()

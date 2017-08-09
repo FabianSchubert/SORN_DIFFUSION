@@ -1,0 +1,73 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import cPickle as pickle
+from custom_modules.frequ_from_spikes import *
+from custom_modules.plot_setting import *
+
+# This script plots excitatory population rates against the population mean of exc. thresholds and fits a linear regression
+
+# location of sim. data and where to save the figure
+folder = sim_data_base_folder + "complete_diff_long_small_tau/"
+savefolder = plots_base_folder +  "Spike_Stats/"
+plot_filename = "linfit_th_rate"
+
+# load exc. thresholds
+th = np.array(pickle.load(open(folder+"thresholds_e.p"))).T
+
+# calculate population mean of thresholds
+th_mean = th.mean(axis=1)
+
+# load excitatory spiketimes
+spt = pickle.load(open(folder + "spiketimes_e.p"))
+
+# calculate firing rates, binned within time bins of 0.1s
+f_arr = frequ_bin_time(spt,0,1500,15000)
+
+# calculate population firing rate
+f_mean = f_arr.mean(axis=1)
+
+# include firing rates from 1000-1500s
+ind_range = [10000,14999]
+
+# linear fit
+fit = np.polyfit(th_mean[ind_range[0]:ind_range[1]],f_mean[ind_range[0]:ind_range[1]],deg=1)
+
+fig = plt.figure(figsize=(default_fig_width,default_fig_width*0.66))
+
+# plot firing rates vs. thresholds
+plt.plot(th_mean[ind_range[0]:ind_range[1]]*1000,f_mean[ind_range[0]:ind_range[1]],'.',alpha=0.8)
+
+# plot linear fit
+x = np.linspace(th_mean[ind_range[0]:ind_range[1]].min(),th_mean[ind_range[0]:ind_range[1]].max(),2)*1000
+y = x*fit[0]/1000. + fit[1]
+plt.plot(x,y)
+plt.xlim([x.min(),x.max()])
+plt.xlabel(r'$\mathrm{\langle \, V_t \,\rangle \, [mV]}$')
+plt.ylabel(r'$\mathrm{\langle \, f \, \rangle \, [Hz]}$')
+
+## Calculate R^2 value and print fit infos
+dat_mean = f_mean[ind_range[0]:ind_range[1]].mean()
+
+ss_tot = ((f_mean[ind_range[0]:ind_range[1]]-dat_mean)**2).sum()
+
+ss_res = ((f_mean[ind_range[0]:ind_range[1]]-th_mean[ind_range[0]:ind_range[1]]*fit[0]-fit[1])**2).sum()
+
+r_squ = 1. - ss_res/ss_tot
+
+print("R-squared:")
+print r_squ
+print("Slope [Hz/mV]:")
+print fit[0]/1000.
+print("Offset [Hz]:")
+print fit[1]
+##
+
+# save figure
+for f_f in file_format:
+	plt.savefig(savefolder + plot_filename + f_f)
+
+
+plt.show()
+
+
+

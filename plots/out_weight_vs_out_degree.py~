@@ -1,0 +1,71 @@
+import numpy as np
+import matplotlib as mpls
+import matplotlib.pyplot as plt
+import cPickle as pickle
+from plot_setting import *
+from frequ_from_spikes import *
+
+# This script plots the mean of exc. outgoing weights among the excitatory population against their respective out degree
+
+## Simulation scripts required to run before this script:
+# -all_diffusive_slow_hom_adaptation
+# -all_instant_diffusion
+# -all_non_diffusive
+
+# where to find data
+folders = [["complete_diff_long/"],
+	["complete_instant_diff_long/"],
+	["complete_non_diff_long/"]]
+
+# list of labels for plotting
+labels = ["Diffusive",
+"Instant Diffusion",
+	"Non-Diffusive"]
+
+# where to save figure
+savefolder = plots_base_folder + "syn_topology/"
+plot_filename = "mean_out_vs_out_degree"
+
+fig,ax = plt.subplots(1,1,figsize=(default_fig_width,default_fig_width*0.5))
+
+# analyze different cases of homeostasis
+for k in xrange(len(folders)):
+	out_mean = np.ndarray((0))
+	out_degree = np.ndarray((0))
+	for l in xrange(len(folders[k])):
+		
+		#load weights
+		W = np.load(sim_data_base_folder + folders[k][l] + "W_eTOe.npy").T
+		
+		# calculate out mean and out degree
+		out_mean = np.append(out_mean,(W.sum(axis=0)/(W!=0.).sum(axis=0))*1000.)
+		out_degree = np.append(out_degree,(W!=0.).sum(axis=0))
+			
+	#scatter data points
+	ax.plot(out_degree,out_mean,'.',label=labels[k],c=mpl.rcParams['axes.color_cycle'][k])
+	
+	# calculate pearson corr. coeff.
+	corr_coef = np.corrcoef(out_degree,out_mean)
+	corr_coef = corr_coef[0,1]
+	
+	# check if calculation was successfull
+	if corr_coef == corr_coef:
+		corr_coef = str(round(corr_coef,3))
+	else:
+		corr_coef = "undef."
+		
+	print(labels[k] + " corr. coeff.: " + str(corr_coef))
+			
+		
+
+ax.set_xlabel("Out Degree")
+ax.set_ylabel("Mean of Outg. W. [mV]")
+
+ax.legend()
+
+# save figure
+for f_f in file_format:
+	plt.savefig(savefolder+plot_filename+f_f)
+
+plt.show()
+	

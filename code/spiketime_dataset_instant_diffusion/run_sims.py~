@@ -1,0 +1,5 @@
+import os
+from parameters import N_runs
+
+for k in N_runs:
+	os.system("SORN_spiketime_dataset_instant_diffusion.py")

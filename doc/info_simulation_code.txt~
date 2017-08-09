@@ -1,0 +1,70 @@
+CF_dataset:
+Time course of recurrent exc. connection fraction for diffusive h. and Gauss. conn. profile.
+
+CF_dataset_non_diff:
+Time course of recurrent exc. connection fraction for non-diffusive h. and Gauss. conn. profile.
+
+CF_dataset_non_diff_no_topology:
+Time course of recurrent exc. connection fraction for non-diffusive h. and uniform conn. profile.
+
+CF_dataset_no_topology:
+Time course of recurrent exc. connection fraction for diffusive h. and uniform conn. profile.
+
+complete_diff_long:
+1500s simulation, completely using diffusive homeostasis.
+
+complete_diff_long_small_tau:
+1500s simulation, completely using diffusive homeostasis, but using a 1000-fold smaller time constant for
+threshold adaptation.
+
+complete_diff_prepostnorm:
+1000s simulation, settings as for complete_diff_long, but recording exc. weights before and after each normalization process.
+
+complete_instant_diff_long:
+1500s simulation, completely using instantaneous diffusion for diff. hom.
+
+complete_non_diff_long:
+1500s simulation, completely using non-diff. hom.
+
+complete_non_diff_prepostnorm:
+As complete_diff_prepostnorm, but only using non-diff hom.
+
+Diff_constant_test_matrix_solve_correlation:
+Set of simulations with different diffusion constants used for calculating the corr. coeff. between simulated and predicted firing rates.
+
+Diff_topology_versions:
+4 simulations with all possible diff/non-diff h., Gaussian/uniform connection profile
+combinations.
+
+Diffusion_constant_test_neumann:
+Simulations testing different diffusion constants, used for analyzing the dependence of width and skewness
+of the firing rate dist. on the diffusion constant.
+
+ext_input_switch:
+Tests the response of the network onto subgroups of excitatory neurons receiving elevated external input
+
+ext_input_switch_spread_source:
+Same as previous, but using circular shaped, non-point-like nNOS influx kernels.
+
+regular_grid_neumann:
+Simulates a network where excitatory neurons are placed on a regular square grid. Shows
+that the width of the firing rate distribution can be affected by the spatial setup of
+the neurons.
+
+spiketime_dataset_diff:
+Spiketime data taken from a set of simulations, only using diff. hom.
+
+spiketime_dataset_instant_diffusion:
+Same as above, but with instantaneous diffusion only.
+
+spiketime_dataset_non_diff:
+see above
+
+tau_theta_sweep:
+A simulation in which the time constant of threshold adaptation (for diffusive homeostasis)
+was stepwise increased to examine its effect on the amplitude and frequency of the noise-
+induced oscillations that we observed.
+
+weights_spiketimes_dataset_diff/non_diff:
+dataset of multiple simulations, where terminal weights and spiketimes were recorded.
+	

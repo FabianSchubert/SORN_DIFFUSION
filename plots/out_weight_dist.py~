@@ -1,0 +1,50 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import plot_setting
+import pdb
+
+W_diff = np.load("/home/fschubert/Master/sim_data/complete_diff_Wprepostnorm/W_eTOe_postnorm_record.npy")
+
+W_diff = W_diff[()]
+
+W_diff = np.array(W_diff.todense())
+
+W_diff = np.reshape(W_diff,(1000,400,400))
+
+W_diff = W_diff.transpose((0,2,1))
+
+W_non_diff = np.load("/home/fschubert/Master/sim_data/complete_non_diff_Wprepostnorm/W_eTOe_postnorm_record.npy")
+
+W_non_diff = W_non_diff[()]
+
+W_non_diff = np.array(W_non_diff.todense())
+
+W_non_diff = np.reshape(W_non_diff,(1000,400,400))
+
+W_non_diff = W_non_diff.transpose((0,2,1))
+
+#pdb.set_trace()
+
+W_diff_sort = np.sort(W_diff.sum(axis=1),axis=1)
+
+W_non_diff_sort = np.sort(W_non_diff.sum(axis=1),axis=1)
+
+#pdb.set_trace()
+
+fig = plt.figure()
+
+ax = fig.gca()
+
+p_diff, = ax.plot(np.linspace(0,1,400),W_diff_sort[0,:]*400)
+p_non_diff, = ax.plot(np.linspace(0,1,400),W_non_diff_sort[0,:]*400)
+
+for k in xrange(1000):
+	
+	p_diff.set_data(np.linspace(0,1,400),W_diff_sort[k,:]*400)
+	p_non_diff.set_data(np.linspace(0,1,400),W_non_diff_sort[k,:]*400)
+	
+	plt.savefig("/home/fschubert/Master/plots/out_weight_animate/plot_"+str(k)+".png")
+	
+#pdb.set_trace()
+
+
